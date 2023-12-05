@@ -17,6 +17,12 @@ class WPMUCorrectFilePaths
   public function __construct()
   {
     add_filter('upload_dir', [$this, 'correctFilePaths'], 1);
+    add_filter('option_upload_path', [$this, 'correctFilePath'], 999);
+  }
+
+  public function correctFilePath($path)
+  {
+    return WP_CONTENT_DIR . $this->getPathWithoutRootDirectory($path);
   }
 
   public function correctFilePaths($data)
@@ -33,7 +39,7 @@ class WPMUCorrectFilePaths
   }
 
   private function getPathWithoutRootDirectory($path) {
-    return rtrim(trim(substr($path, strpos($path, $this->key), strlen($path)), $this->key), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    return rtrim(trim(substr($path, strpos($path, $this->key), strlen($path)), $this->key), DIRECTORY_SEPARATOR);
   }
 }
 
