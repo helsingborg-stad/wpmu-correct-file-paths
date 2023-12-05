@@ -1,0 +1,18 @@
+{
+    "name": "helsingborg-stad/wpmu-correct-file-paths",
+    "homepage": "https://github.com/helsingborg-stad/wpmu-correct-file-paths",
+    "description": "Resolves incorrect file paths, when migrating databases between different environments.",
+    "type": "wordpress-muplugin",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sebastian Thulin",
+            "email": "sebastian.thulin@helsingborg.se"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "composer/installers": "~1.0"
+    },
+    "version": "1.0.0"
+}
