@@ -3,7 +3,7 @@
 /*
 Plugin Name:    WPMU Correct File Paths
 Description:    Resolves incorrect file paths, when migrating databases between different environments.
-Version:        1.0
+Version:        1.0.0
 Author:         Sebastian Thulin
 */
 
