@@ -18,7 +18,7 @@ class WPMUCorrectFilePaths
     {
         add_filter('upload_dir', [$this, 'correctFilePaths'], 1);
         add_filter('option_upload_path', [$this, 'correctFilePath'], 999);
-        add_filter('kirki_downloaded_font_files', [$this, 'correctKirkiFontFiles']);
+        add_filter('option_kirki_downloaded_font_files', [$this, 'correctKirkiFontFiles']);
     }
 
     public function correctFilePath($path)
