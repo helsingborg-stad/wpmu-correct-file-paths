@@ -36,6 +36,8 @@ class WPMUCorrectFilePaths
             $data['basedir'] = WP_CONTENT_DIR . $this->getPathWithoutRootDirectory($data['basedir']);
         }
 
+        $data = array_map(fn($value) => is_string($value) ? str_replace('/wp/wp-content/', '/wp-content/', $value) : $value, $data);
+
         return $data;
     }
 
