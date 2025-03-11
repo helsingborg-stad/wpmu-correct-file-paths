@@ -66,9 +66,14 @@ class WPMUCorrectFilePaths
     private function addSanitizationFilters(): void
     {
         add_filter('upload_dir', [$this, 'correctFilePathsInUploadDirFilter'], 1);
-        add_filter('option_upload_path', [$this, 'correctFilePath']);
-        add_filter('option_kirki_downloaded_font_files', [$this, 'correctKirkiFontFiles']);
-        add_filter('includes_url', [$this, 'correctIncludesUrl'], 999, 3);
+        add_filter('option_upload_path', [$this, 'correctFilePath'], 1);
+        add_filter('option_kirki_downloaded_font_files', [$this, 'correctKirkiFontFiles'], 1);
+        add_filter('includes_url', [$this, 'correctIncludesUrl'], 1, 3);
+        add_filter('script_loader_src', [$this, 'correctScriptLoaderUrls'], 1, 2);
+        add_action('wp_print_scripts', [$this, 'correctRegistreredScriptUrls'], 1);
+        add_action('wp_print_styles', array($this, 'correctRegistreredStyleUrls'), 1);
+        add_action('admin_enqueue_scripts', array($this, 'correctRegistreredScriptUrls'), 1);
+        add_action('admin_enqueue_scripts', array($this, 'correctRegistreredStyleUrls'), 1);
     }
 
     /**
@@ -176,7 +181,11 @@ class WPMUCorrectFilePaths
      * @return string           The corrected url to the file or asset. 
      */
     public function correctIncludesUrl($url, $path, $scheme)
-    {
+    {   
+        if(strpos($url, WPINC) === false) {
+            return $url;
+        }
+
         $url = str_replace(
             $_SERVER['DOCUMENT_ROOT'] ?? '', 
             '',
@@ -188,6 +197,92 @@ class WPMUCorrectFilePaths
         }
 
         return $url; 
+    }
+
+    /**
+     * Correct script loader urls
+     * 
+     * @param string    $src    The url to a file or asset, with domain or root directory.
+     * @param string    $handle The script handle.
+     * 
+     * @return string           The corrected url to the file or asset.
+     */
+    public function correctScriptLoaderUrls($src, $handle): string
+    {
+        $isRelative = strpos($src, 'http') === false;
+
+        return $this->correctIncludesUrl(
+            $src, 
+            '',
+            $isRelative ? 'relative' : 'https'
+        );
+    }
+
+    /**
+     * Correct registrered script urls
+     * 
+     * @return void
+     */
+    public function correctRegistreredScriptUrls(): void
+    {
+        global $wp_scripts;
+        if (!empty($wp_scripts)) {
+            foreach ($wp_scripts->registered as $script) {
+
+                $isRelative = strpos($script->src, 'http') === false;
+
+                //Handle include urls 
+                if (strpos($script->src, 'wp-includes') !== false) {
+                    $script->src = $this->correctIncludesUrl(
+                        $script->src,
+                        '',
+                        $isRelative ? 'relative' : 'https'
+                    );
+                }
+
+                //Handle content urls
+                if (strpos($script->src, 'wp-content') !== false) {
+                    if($isRelative) {
+                        $script->src = $this->getRelativePath($script->src);
+                    } else {
+                        $script->src = $this->getAbsoluteUrl($script->src);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Correct registrered style urls
+     * 
+     * @return void
+     */
+    public function correctRegistreredStyleUrls(): void
+    {
+        global $wp_styles;
+        if (!empty($wp_styles)) {
+            foreach ($wp_styles->registered as $style) {
+                $isRelative = strpos($style->src, 'http') === false;
+
+                //Handle include urls 
+                if (strpos($style->src, 'wp-includes') !== false) {
+                    $style->src = $this->correctIncludesUrl(
+                        $style->src,
+                        '',
+                        $isRelative ? 'relative' : 'https'
+                    );
+                }
+
+                //Handle content urls
+                if (strpos($style->src, 'wp-content') !== false) {
+                    if($isRelative) {
+                        $style->src = $this->getRelativePath($style->src);
+                    } else {
+                        $style->src = $this->getAbsoluteUrl($style->src);
+                    }
+                }
+            }
+        }
     }
 
     /**
