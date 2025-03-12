@@ -11,50 +11,42 @@ namespace WPMUCorrectFilePaths;
 
 class WPMUCorrectFilePaths
 {
-
-    private $key = "wp-content";
-
     public function __construct()
     {
-        add_filter('upload_dir', [$this, 'correctFilePaths'], 1);
-        add_filter('option_upload_path', [$this, 'correctFilePath'], 999);
-        add_filter('option_kirki_downloaded_font_files', [$this, 'correctKirkiFontFiles']);
-    }
-
-    public function correctFilePath($path)
-    {
-        return WP_CONTENT_DIR . $this->getPathWithoutRootDirectory($path);
-    }
-
-    public function correctFilePaths($data)
-    {
-        if (isset($data['path'])) {
-            $data['path'] = WP_CONTENT_DIR . $this->getPathWithoutRootDirectory($data['path']);
-        }
-
-        if (isset($data['basedir'])) {
-            $data['basedir'] = WP_CONTENT_DIR . $this->getPathWithoutRootDirectory($data['basedir']);
-        }
-
-        return $data;
-    }
-
-    public function correctKirkiFontFiles($fontFiles)
-    {
-        if (is_array($fontFiles) && !empty($fontFiles)) {
-            foreach ($fontFiles as &$fontFile) {
-                if (is_string($fontFile)) {
-                    $fontFile = $this->correctFilePath($fontFile);
-                }
+        //Correct values that may be faulty in db
+        add_filter('option_upload_path', function($optionValue) {
+            if(!empty($optionValue)) {
+                return WP_CONTENT_DIR . $this->getRelativePath($optionValue); 
             }
-        }
+            return $optionValue;
+        }, 1, 1);
 
-        return $fontFiles;
+        //Warn about UPLOADS constant
+        add_action('admin_notices', function() {
+            if(defined('UPLOADS')) {
+                printf( '<div class="%1$s"><p>%2$s</p></div>',
+                    esc_attr('notice notice-error'), 
+                    esc_html("Please do not define UPLOADS constant in Municipio; This is not supported.")
+                );
+            }
+        });
     }
 
-    private function getPathWithoutRootDirectory($path)
+    /**
+     * Get relative path
+     * 
+     * @param string    $path   The path to a file or asset, with domain or root directory.
+     * @return string           The relative path to the file or asset. 
+     */
+    private function getRelativePath(string $path): string
     {
-        return rtrim(trim(substr($path, strpos($path, $this->key), strlen($path)), $this->key), DIRECTORY_SEPARATOR);
+        $pattern = '/(\/wp-content\/)/';
+        if (preg_match($pattern, $path, $matches, PREG_OFFSET_CAPTURE)) {
+            $delimiterPos = $matches[0][1] + strlen($matches[0][0]);
+            $relativePath = substr($path, $delimiterPos);
+            return '/' . ltrim($relativePath, '/');
+        }
+        return $path;
     }
 }
 
